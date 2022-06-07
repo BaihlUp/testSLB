@@ -69,12 +69,12 @@ function my_configure_ilb() {
         --with-zlib=$DEPS_DIR/${ZLIB}                                      \
         --with-pcre-jit                 \
         --with-threads                  \
-	--with-stream_realip_module     \
+	    --with-stream_realip_module     \
         --with-stream                          \
         --with-http_v2_module           \
         --with-stream_ssl_module               \
         --with-stream_ssl_preread_module       \
-	--with-http_auth_request_module \
+	    --with-http_auth_request_module \
         --with-http_ssl_module          \
         --with-http_gzip_static_module  \
         --with-http_stub_status_module  \
