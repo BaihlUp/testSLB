@@ -1,0 +1,256 @@
+#!/bin/sh
+
+readonly PATH='/usr/sbin:/usr/bin:/sbin:/bin'
+
+cd "$(dirname $0)" || exit 1
+readonly G_BIN_DIR="$(pwd)"
+# nginx.pid rely on work dir
+cd ..
+readonly G_WORK_DIR=$(cd ${G_BIN_DIR}/../; pwd)
+readonly G_LOG_DIR="${G_WORK_DIR}/logs"
+
+export G_WORK_DIR
+export G_LOG_DIR
+
+
+G_CONF_FILE="${G_WORK_DIR}/conf/nginx.conf"
+G_PROC_FILE="${G_WORK_DIR}/sbin/nginx"
+G_PROC_ARGS="-p ${G_WORK_DIR} -c ${G_CONF_FILE}"
+G_PROC_IDENTIFIER="nginx: master process ${G_PROC_FILE}"
+
+export G_CONF_FILE
+export G_PROC_FILE
+export G_PROC_ARGS
+export G_PROC_IDENTIFIER
+
+export LD_LIBRARY_PATH=/export/servers/openssl_ife/lib/:$LD_LIBRARY_PATH:/export/servers/ife/libs/
+
+readonly SLEEP='sleep'
+
+readonly G_HABIT_DIR='/export/servers/ife'
+
+check_habit_link()
+{
+    if [ $G_WORK_DIR == $G_HABIT_DIR ]; then
+        # 手动执行云翼部署的脚本
+        local linkto=`ls -ld $G_WORK_DIR | awk '{print $NF}'`
+        if [ $linkto != $G_WORK_DIR ]; then
+            G_CONF_FILE="${linkto}/conf/nginx.conf"
+            G_PROC_FILE="${linkto}/sbin/nginx"
+            G_PROC_ARGS="-p ${linkto} -c ${G_CONF_FILE}"
+
+            G_PROC_IDENTIFIER="nginx: master process ${linkto}"
+
+            export G_CONF_FILE
+            export G_PROC_FILE
+            export G_PROC_ARGS
+            export G_PROC_IDENTIFIER
+        fi
+        return
+    fi
+}
+
+Fconfig() {
+    ulimit -n 655350
+
+    # bind 非本地IP
+    #sysctl -qw net.ipv4.ip_nonlocal_bind=1
+    #sysctl -qw net.ipv6.ip_nonlocal_bind=1
+
+    #check_habit_link
+}
+
+# return 1 if nginx started, 0 otherwise
+check()
+{
+    local num=$(ps -eo pid,command | grep "\(${G_PROC_IDENTIFIER}\)" | grep -v "grep" |wc -l)
+    return ${num}
+}
+
+help()
+{
+    echo "${0} <start|stop|restart|reload|status|checkconf>"
+    exit 0
+}
+
+die()
+{
+    echo "[FAILED] ${1}"
+    exit 1
+}
+
+ok()
+{
+    echo "[OK] ${1}"
+}
+
+signal()
+{
+    Fconfig
+    ${G_PROC_FILE} ${G_PROC_ARGS} -s quit
+    if [ $? -ne 0 ];
+    then
+        echo "[FAILED] quit ${G_PROC_FILE}"
+    fi
+}
+
+shutdown()
+{
+    Fconfig
+    ${G_PROC_FILE} ${G_PROC_ARGS} -s stop
+    if [ $? -ne 0 ];
+    then
+        echo "[FAILED] stop ${G_PROC_FILE}"
+    fi
+}
+
+reload()
+{
+
+    Fconfig
+    echo "pwd: $(pwd)"
+
+    if [ -f ${G_WORK_DIR}/nginx.pid ]; then
+        kill -s hup `cat ${G_WORK_DIR}/nginx.pid`
+        if [ $? -ne 0 ]; then
+            die "reload"
+        fi
+    else
+        die "no nginx.pid file found"
+    fi
+
+    ok "reload"
+}
+
+ckconf() 
+{
+    Fconfig
+    echo "pwd: $(pwd)"
+    ${G_PROC_FILE} ${G_PROC_ARGS} -t
+    return $?
+}
+
+start()
+{
+    Fconfig
+    echo "pwd: $(pwd)"
+    mkdir -p $G_LOG_DIR
+
+    check
+    if [ $? -eq 1 ]; then
+        ok "start"
+        return 0
+    fi
+
+    #start program now
+    ${G_PROC_FILE} ${G_PROC_ARGS}
+    if [ $? -ne 0 ]; then
+        die "start"
+    fi
+    ok "start"
+
+    return 0
+}
+
+stop()
+{
+    Fconfig
+    check
+    if [ $? -eq 0 ]; then
+        ok "stop"
+        return 0
+    fi
+
+    for i in 1 2 3 4 5 6 7 8 9 10; do
+        shutdown
+        ${SLEEP} 1
+        check
+        if [ $? -eq 0 ]; then
+            ok "stop"
+            return 0
+        fi
+        ${SLEEP} 5
+        if [ $i -gt 8 ]; then
+            ps -ef|grep 'nginx: worker process is shutting down' |grep -v grep |awk '{print "kill -9 " $2}' |sh
+        fi
+    done
+    die "stop"
+}
+
+reopen()
+{
+    Fconfig
+
+    #重新打开日志文件
+    if [ -f ${G_WORK_DIR}/nginx.pid ]; then
+        kill -s usr1 `cat ${G_WORK_DIR}/nginx.pid`
+        if [ $? -ne 0 ]; then
+            die "reopen"
+        fi
+    else
+        die "no nginx.pid file found"
+    fi
+
+    ok "reopen"
+}
+
+restart()
+{
+    Fconfig
+    stop || {
+        exit 1
+    }
+    start || {
+        exit 1
+    }
+
+    return 0
+}
+
+status()
+{
+    Fconfig
+    check
+    if [ $? -eq 1 ]; then
+        echo 'Running'
+        return 0
+    else
+        echo 'Not running'
+        return 1
+    fi
+}
+
+version()
+{
+    ${G_PROC_FILE} -V
+}
+
+case "${1}" in
+checkconf)
+    ckconf
+    ;;
+start)
+    start
+    ;;
+stop)
+    stop
+    ;;
+status)
+    status
+    ;;
+reload)
+    reload
+    ;;
+restart)
+    restart
+    ;;
+reopen)
+    reopen
+    ;;
+version)
+    version
+    ;;
+*)
+    help
+    ;;
+esac
