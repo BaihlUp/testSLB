@@ -61,7 +61,7 @@ function my_configure_ilb() {
     cd $WORK_DIR/nginx && ./configure    \
         --prefix=$PREFIX            \
         --with-cc=gcc                        \
-	--with-cc-opt="-Wall -Werror -ggdb -fno-omit-frame-pointer -O2 $SSL_INC " \
+        --with-cc-opt="-Wall -Werror -ggdb -fno-omit-frame-pointer -O2 $SSL_INC " \
         --with-ld-opt="$SSL_LIB"                                           \
         --with-openssl-opt="enable-tls1_3 enable-weak-ssl-ciphers"         \
         ${WITH_SSL}                                                        \
@@ -69,12 +69,12 @@ function my_configure_ilb() {
         --with-zlib=$DEPS_DIR/${ZLIB}                                      \
         --with-pcre-jit                 \
         --with-threads                  \
-	    --with-stream_realip_module     \
+        --with-stream_realip_module     \
         --with-stream                          \
         --with-http_v2_module           \
         --with-stream_ssl_module               \
         --with-stream_ssl_preread_module       \
-	    --with-http_auth_request_module \
+        --with-http_auth_request_module \
         --with-http_ssl_module          \
         --with-http_gzip_static_module  \
         --with-http_stub_status_module  \
@@ -124,7 +124,7 @@ function my_install_script() {
 }
 
 function my_install_deplibs() {
-	install -d $DESTDIR/$PREFIX/libs/
+    install -d $DESTDIR/$PREFIX/libs/
     #install $WORK_DIR/libs/* $DESTDIR/$PREFIX/libs
     
     # 用打包环境的lib 替换
