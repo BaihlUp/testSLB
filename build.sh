@@ -61,7 +61,7 @@ function my_configure_ilb() {
     cd $WORK_DIR/nginx && ./configure    \
         --prefix=$PREFIX            \
         --with-cc=gcc                        \
-        --with-cc-opt="-Wall -Werror -ggdb -fno-omit-frame-pointer -O2 $SSL_INC " \
+	--with-cc-opt="-Wall -Werror -ggdb -fno-omit-frame-pointer -O2 $SSL_INC " \
         --with-ld-opt="$SSL_LIB"                                           \
         --with-openssl-opt="enable-tls1_3 enable-weak-ssl-ciphers"         \
         ${WITH_SSL}                                                        \
@@ -69,7 +69,8 @@ function my_configure_ilb() {
         --with-zlib=$DEPS_DIR/${ZLIB}                                      \
         --with-pcre-jit                 \
         --with-threads                  \
-        --with-http_auth_request_module \
+<<'COMMENT'
+	--with-http_auth_request_module \
         --with-http_ssl_module          \
         --with-http_gzip_static_module  \
         --with-http_stub_status_module  \
@@ -79,19 +80,8 @@ function my_configure_ilb() {
         --with-stream                          \
         --with-stream_ssl_module               \
         --with-stream_ssl_preread_module       \
-        --without-http_echo_module             \
-        --without-http_xss_module              \
-        --without-http_coolkit_module          \
-        --without-http_form_input_module       \
-        --without-http_encrypted_session_module \
-        --without-http_srcache_module           \
-        --without-http_array_var_module         \
-        --without-http_memc_module              \
-        --without-http_redis_module             \
-        --without-http_redis2_module            \
-        --without-http_rds_json_module          \
-        --without-http_rds_csv_module           \
         $debug
+COMMENT
 }
 
 function my_build() {
