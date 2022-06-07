@@ -5,7 +5,7 @@ cmake-build-debug/**
 .vscode/**
 objs/**
 ./Makefile
-openresty/Makefile
+nginx/Makefile
 *.o
 *.a
 *.so

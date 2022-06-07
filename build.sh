@@ -69,19 +69,18 @@ function my_configure_ilb() {
         --with-zlib=$DEPS_DIR/${ZLIB}                                      \
         --with-pcre-jit                 \
         --with-threads                  \
-<<'COMMENT'
+	--with-stream_realip_module     \
+        --with-stream                          \
+        --with-http_v2_module           \
+        --with-stream_ssl_module               \
+        --with-stream_ssl_preread_module       \
 	--with-http_auth_request_module \
         --with-http_ssl_module          \
         --with-http_gzip_static_module  \
         --with-http_stub_status_module  \
-        --with-http_v2_module           \
         --with-http_addition_module     \
         --with-http_slice_module        \
-        --with-stream                          \
-        --with-stream_ssl_module               \
-        --with-stream_ssl_preread_module       \
         $debug
-COMMENT
 }
 
 function my_build() {
@@ -105,7 +104,10 @@ function my_install_ilb_conf() {
     install -d $ILB_CONF
 
     install -d $ILB_CONF/localconfs/
-    #install $WORK_DIR/conf/localconfs/* $ILB_CONF/localconfs/
+    install $WORK_DIR/conf/localconfs/* $ILB_CONF/localconfs/
+
+    install -d $ILB_CONF/streamconfs/
+    install $WORK_DIR/conf/streamconfs/* $ILB_CONF/streamconfs/
 
     install -d $ILB_CONF/certs/
     #install $WORK_DIR/conf/certs/* $ILB_CONF/certs/
